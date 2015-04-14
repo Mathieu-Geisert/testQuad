@@ -30,8 +30,11 @@
   *    \date   2009
   */
 
-#include <acado_optimal_control.hpp>
-#include <acado_gnuplot.hpp>
+//#include <acado_optimal_control.hpp>
+//#include <acado_gnuplot.hpp>
+#include <acado_toolkit.hpp>
+#include <include/acado_gnuplot/gnuplot_window.hpp>
+
 #include <time.h>
 #include <math.h>
 
@@ -56,6 +59,8 @@ int main( ){
     const double m = 0.9;
     const double g = 9.81;
     const double Cx = 0.1;
+
+    const double Iarm1 = 0 ;
 
     const double xf = 20.;
     const double yf = 0.;

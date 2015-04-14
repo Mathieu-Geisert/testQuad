@@ -31,7 +31,7 @@
   */
 
 #include <acado_optimal_control.hpp>
-#include <acado_gnuplot.hpp>
+#include <include/acado_gnuplot/gnuplot_window.hpp>
 #include <time.h>
 
 /* >>> start tutorial code >>> */

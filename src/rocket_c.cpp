@@ -24,7 +24,7 @@
  */
 
 
- /**
+/**
   *    \file   examples/ocp/rocket_c.cpp
   *    \author Boris Houska, Hans Joachim Ferreau
   *    \date   2010
@@ -65,25 +65,27 @@
 
 se3::Model robot = se3::urdf::buildModel("/local/mgeisert/models/universal_robot/ur_description/urdf/ur5_robot.urdf");
 se3::Data data(robot);
+Eigen::VectorXd q(6);
+Eigen::VectorXd v(6);
+Eigen::VectorXd u(6);
+Eigen::VectorXd a(6);
+Eigen::VectorXd ei(6);
+Eigen::VectorXd Mi;
+Eigen::MatrixXd M(6,6);
+Eigen::VectorXd b0;
+Eigen::VectorXd b;
 
 void myDifferentialEquation( double *x, double *f, void *user_data )
 {
-    Eigen::VectorXd q(6);
-    q[0] = x[0]; q[1] = x[1]; q[2] = x[2]; q[3] = x[3]; q[4] = x[4]; q[5] = x[5];
-    Eigen::VectorXd v(6);
-    v[0] = x[6]; v[1] = x[7]; v[2] = x[8]; v[3] = x[9]; v[4] = x[10]; v[5] = x[11];
-    Eigen::VectorXd u(6);
-    u[0] = x[13]; u[1] = x[14]; u[2] = x[15]; u[3] = x[16]; u[4] = x[17]; u[5] = x[18];
-    Eigen::VectorXd a(6);
-    a[0] = 0; a[1] = 0; a[2] = 0; a[3] = 0; a[4] = 0; a[5] = 0;
+    for (unsigned int i = 0 ; i<6 ; i++) {
+        q[i] = x[i];
+        v[i] = x[i+6];
+        a[i] = 0.;
+        u[i] = x[i+12];
+        ei[i] = 0.;
+    }
 
-    Eigen::VectorXd ei(6);
-    ei[0] = 0.; ei[1] = 0.; ei[2] = 0.; ei[3] = 0.; ei[4] = 0.; ei[5] = 0.;
-
-    Eigen::VectorXd Mi;
-    Eigen::MatrixXd M(6,6);
-    Eigen::VectorXd b0 = rnea(robot, data, q, a, a);
-
+    b0 = rnea(robot, data, q, a, a);
     for (unsigned int i=0 ; i<6 ; i++) {
         ei(i)=1;
         Mi = rnea(robot, data, q, a, ei);
@@ -95,50 +97,25 @@ void myDifferentialEquation( double *x, double *f, void *user_data )
 
     //std::cout << " M rnea :\n" <<  M << std::endl << std::endl;
     //std::cout << "crba :\n" << crba(robot, data, q) << std::endl << std::endl;
-
-    Eigen::VectorXd b = rnea(robot, data, q, v, a);
-
-//    M(1) = rnea(robot, data, q, 0, ei) - rnea(robot, data, q, 0, 0);
-//    std::cout << M << std::endl;
-//    ei[0] = 0; ei[1] = 1;
-//    M(1) = rnea(robot, data, q, 0, ei) - rnea(robot, data, q, 0, 0);
-//    std::cout << M << std::endl;
-//    ei[1] = 0; ei[2] = 1;
-//    M(2) = rnea(robot, data, q, 0, ei) - rnea(robot, data, q, 0, 0);
-//    std::cout << M << std::endl;
-//    ei[2] = 0; ei[3] = 1;
-//    M(3) = rnea(robot, data, q, 0, ei) - rnea(robot, data, q, 0, 0);
-//    std::cout << M << std::endl;
-//    ei[3] = 0; ei[4] = 1;
-//    M(4) = rnea(robot, data, q, 0, ei) - rnea(robot, data, q, 0, 0);
-//    std::cout << M << std::endl;
-//    ei[4] = 0; ei[5] = 1;
-//    M(5) = rnea(robot, data, q, 0, ei) - rnea(robot, data, q, 0, 0);
-//    std::cout << M << std::endl;
+    b = rnea(robot, data, q, v, a);
 
     a = M.llt().solve(u-b);
-    //std::cout << a << std::endl;
-
-//    for(unsigned int i=0 ; i<6 ; i++) {
-//        f[i] = x[i]+x[i+6]*h;
-//        f[i+6] = x[i+6] + h*x[12+i];
-//    }
 
     /// DISCRET MODE
-//    double h = ((double*) user_data)[0];
-//    f[0]=q[0]+v[0]*h;
-//    f[1]=q[1]+v[1]*h;
-//    f[2]=q[2]+v[2]*h;
-//    f[3]=q[3]+v[3]*h;
-//    f[4]=q[4]+v[4]*h;
-//    f[5]=q[5]+v[5]*h;
-//    f[6]=v[0]+a[0]*h;
-//    f[7]=v[1]+a[1]*h;
-//    f[8]=v[2]+a[2]*h;
-//    f[9]=v[3]+a[3]*h;
-//    f[10]=v[4]+a[4]*h;
-//    f[11]=v[5]+a[5]*h;
-//    f[12]=x[12]+(x[0]*x[0]+x[1]*x[1]+x[2]*x[2]+x[3]*x[3]+x[4]*x[4]+x[5]*x[5]);//*0.01;
+    //    double h = ((double*) user_data)[0];
+    //    f[0]=q[0]+v[0]*h;
+    //    f[1]=q[1]+v[1]*h;
+    //    f[2]=q[2]+v[2]*h;
+    //    f[3]=q[3]+v[3]*h;
+    //    f[4]=q[4]+v[4]*h;
+    //    f[5]=q[5]+v[5]*h;
+    //    f[6]=v[0]+a[0]*h;
+    //    f[7]=v[1]+a[1]*h;
+    //    f[8]=v[2]+a[2]*h;
+    //    f[9]=v[3]+a[3]*h;
+    //    f[10]=v[4]+a[4]*h;
+    //    f[11]=v[5]+a[5]*h;
+    //    f[12]=x[12]+(x[0]*x[0]+x[1]*x[1]+x[2]*x[2]+x[3]*x[3]+x[4]*x[4]+x[5]*x[5]);//*0.01;
 
     f[0]=v[0];
     f[1]=v[1];
@@ -154,10 +131,10 @@ void myDifferentialEquation( double *x, double *f, void *user_data )
     f[11]=a[5];
     f[12]=(x[0]*x[0]+x[1]*x[1]+x[2]*x[2]+x[3]*x[3]+x[4]*x[4]+x[5]*x[5]);//*0.01;
 
-//    std::cout << "ba" << std::endl;
+    //    std::cout << "ba" << std::endl;
 
-//    for (unsigned int i=0 ; i<21 ; i++ )
-//        std::cout << i << "   " << x[i] << std::endl;
+    //    for (unsigned int i=0 ; i<21 ; i++ )
+    //        std::cout << i << "   " << x[i] << std::endl;
 }
 
 void myForwardDerive(int number, double* x, double* seed, double* f, double* df, void* userData)
@@ -204,7 +181,6 @@ void myInequalityPathConstraint( double *x, double *f, void *user_data ){
 //              USE THE ACADO TOOLKIT TO SOLVE THE PROBLEM:
 // -------------------------------------------------------------------------
 
-
 USING_NAMESPACE_ACADO
 
 
@@ -226,17 +202,17 @@ int main( ){
 
     DifferentialEquation  f      ;
 
-//    const double h = 0.01;
-//    DiscretizedDifferentialEquation  f(h);
-//    F.setUserData((void*) &h);
+    //    const double h = 0.01;
+    //    DiscretizedDifferentialEquation  f(h);
+    //    F.setUserData((void*) &h);
 
     // DEFINE THE OPTIMIZATION VARIABLES:
     // --------------------------------------------------
 
     IntermediateState x(19);
 
-     x(0) = spx;  x(1) = slx;  x(2) = ex;  x(3) = w1x;  x(4) = w2x;  x(5) = w3x;
-     x(6) = spv;  x(7) = slv;  x(8) = ev;  x(9) = w1v; x(10) = w2v; x(11) = w3v; x(12) = cost;
+    x(0) = spx;  x(1) = slx;  x(2) = ex;  x(3) = w1x;  x(4) = w2x;  x(5) = w3x;
+    x(6) = spv;  x(7) = slv;  x(8) = ev;  x(9) = w1v; x(10) = w2v; x(11) = w3v; x(12) = cost;
     x(13) = spu; x(14) = slu; x(15) = eu; x(16) = w1u; x(17) = w2u; x(18) = w3u;
 
 
@@ -248,22 +224,22 @@ int main( ){
 
     ocp.subjectTo( f << F(x) );
 
-//    double stats[19];
-//    stats[0] = 2; stats[1] = 2; stats[2] = 2; stats[3] = 2; stats[4] = 2; stats[5] = 2; stats[6] = 2; stats[7] = 2; stats[8] = 2;
-//    stats[9] = 2; stats[10] = 2; stats[11] = 2; stats[12] = 2; stats[13] = 2; stats[14] = 2; stats[15] = 2; stats[16] = 2;
-//    stats[17] = 2; stats[18] = 2;
+    //    double stats[19];
+    //    stats[0] = 2; stats[1] = 2; stats[2] = 2; stats[3] = 2; stats[4] = 2; stats[5] = 2; stats[6] = 2; stats[7] = 2; stats[8] = 2;
+    //    stats[9] = 2; stats[10] = 2; stats[11] = 2; stats[12] = 2; stats[13] = 2; stats[14] = 2; stats[15] = 2; stats[16] = 2;
+    //    stats[17] = 2; stats[18] = 2;
 
-//    double seed[19];
-//    seed[0] = 100; seed[1] = 0; seed[2] = 0; seed[3] = 0; seed[4] = 0; seed[5] = 0; seed[6] = 0; seed[7] = 0; seed[8] = 0;
-//    seed[9] = 0; seed[10] = 0; seed[11] = 0; seed[12] = 0; seed[13] = 0; seed[14] = 0; seed[15] = 0; seed[16] = 0;
-//    seed[17] = 0; seed[18] = 0;
+    //    double seed[19];
+    //    seed[0] = 100; seed[1] = 0; seed[2] = 0; seed[3] = 0; seed[4] = 0; seed[5] = 0; seed[6] = 0; seed[7] = 0; seed[8] = 0;
+    //    seed[9] = 0; seed[10] = 0; seed[11] = 0; seed[12] = 0; seed[13] = 0; seed[14] = 0; seed[15] = 0; seed[16] = 0;
+    //    seed[17] = 0; seed[18] = 0;
 
-//    double value[13];
-//    double derive[13];
+    //    double value[13];
+    //    double derive[13];
 
-//    F.AD_forward(stats, seed, value, derive);
-//    for ( unsigned int i=0 ; i<13 ; i++)
-//        std::cout << derive[i] <<std::endl;
+    //    F.AD_forward(stats, seed, value, derive);
+    //    for ( unsigned int i=0 ; i<13 ; i++)
+    //        std::cout << derive[i] <<std::endl;
 
     ocp.subjectTo( AT_START, x(0) ==  0.0 );
     ocp.subjectTo( AT_START, x(1) ==  0.0 );
@@ -286,9 +262,9 @@ int main( ){
     ocp.subjectTo( -10 <= x(16) <= 10 );
     ocp.subjectTo( -10 <= x(17) <= 10 );
 
-  //  ocp.subjectTo( AT_START, I(x) ==  0.0 );
-  //  ocp.subjectTo( AT_END  , E(x) ==  0.0 );
-  //  ocp.subjectTo(  );
+    //  ocp.subjectTo( AT_START, I(x) ==  0.0 );
+    //  ocp.subjectTo( AT_END  , E(x) ==  0.0 );
+    //  ocp.subjectTo(  );
 
 
     // VISUALIZE THE RESULTS IN A GNUPLOT WINDOW:
@@ -306,12 +282,12 @@ int main( ){
     window1.addSubplot( x(16),"w1u" );
     window1.addSubplot( x(9),"w1v" );
     window1.addSubplot( x(3),"w1x" );
-//    window1.addSubplot( x(17),"w2u" );
-//    window1.addSubplot( x(10),"w2v" );
-//    window1.addSubplot( x(4),"w2x" );
-//    window1.addSubplot( x(17),"w3u" );
-//    window1.addSubplot( x(11),"w3v" );
-//    window1.addSubplot( x(5),"w3x" );
+    //    window1.addSubplot( x(17),"w2u" );
+    //    window1.addSubplot( x(10),"w2v" );
+    //    window1.addSubplot( x(4),"w2x" );
+    //    window1.addSubplot( x(17),"w3u" );
+    //    window1.addSubplot( x(11),"w3v" );
+    //    window1.addSubplot( x(5),"w3x" );
 
     // DEFINE AN OPTIMIZATION ALGORITHM AND SOLVE THE OCP:
     // ---------------------------------------------------

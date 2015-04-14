@@ -29,11 +29,12 @@
   *    \author Boris Houska, Hans Joachim Ferreau
   *    \date   2010
   */
-#include <iostream>
-#include <fstream>
+
 
 #include <acado_optimal_control.hpp>
-#include <acado_gnuplot.hpp>
+//#include <acado_gnuplot.hpp>
+//#include <acado_toolkit.hpp>
+#include <include/acado_gnuplot/gnuplot_window.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -59,7 +60,6 @@
 #define  NI   12    // number of initial value constraints
 #define  NE   2    // number of end-point / terminal constraints
 #define  NH   1    // number of inequality path constraints
-#define NB_IT 20
 
 
 // -----------------------------------------------------------------------------
@@ -67,10 +67,10 @@
 // -----------------------------------------------------------------------------
 
 const double Cf = 0.00065;
-const double d = 1;
-const double c = 0.001;
+const double d = 0.250;
+const double c = 0.00001;
 
-se3::Model robot = se3::urdf::buildModel("/local/mgeisert/models/ur5_quad.urdf", true);
+se3::Model robot = se3::urdf::buildModel("/local/mgeisert/models/ur5_light.urdf", true);
 se3::Data data(robot);
 
 Eigen::VectorXd q(13);
@@ -124,21 +124,21 @@ void myDifferentialEquation( double *x, double *f, void *user_data )
 
     //std::cout << "configuration q :   \n" << q << std::endl;
 
-    MomentRPY(0) = d*(x[24]-x[25]);//*0.001;
-    MomentRPY(1) = d*(x[27]-x[26]);//*0.001;
-    MomentRPY(2) = c*(x[24]+x[25]-x[26]-x[27]);//*0.0001;
+    MomentRPY(0) = x[25];//*0.001;
+    MomentRPY(1) = x[26];//*0.001;
+    MomentRPY(2) = x[27];//*0.001;
 
     //MomentRPY = Mrot*MomentRPY;
 
     u[0] = 0;//- (x[24]+x[25]+x[26]+x[27])*sin(p);
     u[1] = 0;//(x[24]+x[25]+x[26]+x[27])*sin(r)*cos(p);
-    u[2] = (x[24]+x[25]+x[26]+x[27]);//*cos(r)*cos(p);
+    u[2] = (x[24]);//*cos(r)*cos(p);
     u[3] = MomentRPY(0);
     u[4] = MomentRPY(1);
     u[5] = MomentRPY(2);
 
     for (i = 0 ; i<6 ; i++) {
-        u[i+6] = x[i+28];
+        u[i+6] = x[i+28];//*0.01;
     }
 
 
@@ -164,7 +164,6 @@ void myDifferentialEquation( double *x, double *f, void *user_data )
 //    std::cout << "Forces : \n" << u << std::endl << std::endl;
 //    std::cout << "Acceleration : \n" << a << std::endl << std::endl;
 
-    // --------------------   COMPUTE OUTPUT -----------------------  //
     // --------------------   COMPUTE OUTPUT -----------------------  //
     // vitesses lineaires Freeflyer
     for (i=0 ; i<3 ; i++ ) {
@@ -193,7 +192,7 @@ void myDifferentialEquation( double *x, double *f, void *user_data )
     }
 
     // cost
-    f[24]=((x[6]-1.57)*(x[6]-1.57)+x[7]*x[7]+x[8]*x[8]+x[9]*x[9]+x[10]*x[10]+x[11]*x[11]);
+    //f[12]=(x[0]*x[0]+x[1]*x[1]+x[2]*x[2]+x[3]*x[3]+x[4]*x[4]+x[5]*x[5]);//*0.01;
 
 }
 
@@ -209,20 +208,20 @@ int main( ){
 
     // INTRODUCE THE VARIABLES:
     // --------------------------------------------------
-    DifferentialState     xp, yp, zp, phi, theta, psi, spx ,slx, ex, w1x, w2x, w3x, vx, vy, vz, p, q, r, spv, slv, ev, w1v, w2v, w3v, cost;
+    DifferentialState     xp, yp, zp, phi, theta, psi, spx ,slx, ex, w1x, w2x, w3x, vx, vy, vz, p, q, r, spv, slv, ev, w1v, w2v, w3v;//  cost;
     Control               u1, u2, u3, u4, spu, slu, eu, w1u, w2u, w3u;
-//    Parameter             T;
+    Parameter             T;
 
     // DEFINE THE DIMENSIONS OF THE C-FUNCTIONS:
     // --------------------------------------------------
-    CFunction F( 25, myDifferentialEquation     );
+    CFunction F( 24, myDifferentialEquation     );
     //CFunction M( NJ, myObjectiveFunction        );
     //CFunction I( NI, myInitialValueConstraint   );
     //CFunction E( NE, myEndPointConstraint       );
     //CFunction H( NH, myInequalityPathConstraint );
 
 
-    DifferentialEquation  f     ;
+    DifferentialEquation  f      ;
 
 //    const double h = 0.01;
 //    DiscretizedDifferentialEquation  f(h);
@@ -231,88 +230,51 @@ int main( ){
     // DEFINE THE OPTIMIZATION VARIABLES:
     // --------------------------------------------------
 
-    IntermediateState x(35);
+    IntermediateState x(34);
 
      x(0) = xp;  x(1) = yp;  x(2) = zp;  x(3) = phi;  x(4) = theta;  x(5) = psi;
      x(6) = spx;  x(7) = slx;  x(8) = ex;  x(9) = w1x;  x(10) = w2x;  x(11) = w3x;
      x(12) = vx;  x(13) = vy;  x(14) = vz;  x(15) = p; x(16) = q; x(17) = r;
      x(18) = spv;  x(19) = slv;  x(20) = ev;  x(21) = w1v; x(22) = w2v; x(23) = w3v;
      x(24) = u1; x(25) = u2; x(26) = u3; x(27) = u4;
-     x(28) = spu; x(29) = slu; x(30) = eu; x(31) = w1u; x(32) = w2u; x(33) = w3u; x(34) = cost;
+     x(28) = spu; x(29) = slu; x(30) = eu; x(31) = w1u; x(32) = w2u; x(33) = w3u;
 
 
     // DEFINE AN OPTIMAL CONTROL PROBLEM:
     // ----------------------------------
-    OCP ocp( 0.0, 2, NB_IT );
+    OCP ocp( 0.0, T, 20 );
 
-    ocp.minimizeMayerTerm(0);
+    ocp.minimizeMayerTerm(T);
 
-    ocp.subjectTo( f << F(x) );
+    ocp.subjectTo( f << F(x)*T );
 
-    //ocp.subjectTo( 0.001 <= T <= 15);
+    ocp.subjectTo( 1 <= T <= 20);
 
-// -----------------------------------------   CONTRAINTES INITIALES  --------------------------------------  //
+    // Start constraints
     for (unsigned int k=0 ; k < 24 ; k++) {
-        if (k==7) {
-            ocp.subjectTo(AT_START, x(k) == -1.57);
-        }
-        else
-            ocp.subjectTo(AT_START, x(k) == 0.0);
+        ocp.subjectTo(AT_START, x(k) == 0.0);
     }
-    ocp.subjectTo(AT_START, x(34)==0.0);
 
-// -----------------------------------------   CONTRAINTES FINALES  --------------------------------------  //
-// CONTRAINTES FREEFLYER
-    ocp.subjectTo( AT_END, x(0) ==  1.0 );
+    // End constraints
+    ocp.subjectTo( AT_END, x(0) ==  10.0 );
     ocp.subjectTo( AT_END, x(1) ==  0.0 );
-    ocp.subjectTo(AT_END, x(2) == 0.0 );
+    ocp.subjectTo( AT_END, x(2) ==  0.0 );
+//    ocp.subjectTo(AT_END, x(6) == 0.0);
+//    ocp.subjectTo(AT_END, x(7) == 0.0);
+//    ocp.subjectTo(AT_END, x(8) == 0.0);
 
-    ocp.subjectTo(AT_END, x(3) == 0.0);
-    ocp.subjectTo(AT_END, x(4) == 0.0);
-    ocp.subjectTo(AT_END, x(5) == 0.0);
-
-    for (unsigned int k=6; k<12  ; k++) {
+    for (unsigned int k=3 ; k < 24 ; k++) {
         ocp.subjectTo(AT_END, x(k) == 0.0 );
     }
 
-// CONTRAINTES JOINTS
-    for (unsigned int k=12; k<24  ; k++) {
-        ocp.subjectTo(AT_END, x(k) == 0.0 );
-    }
+    ocp.subjectTo(0 <= x(24) <= 120);
+    ocp.subjectTo(-5 <= x(25) <= 5);
+    ocp.subjectTo(-5 <= x(26) <= 5);
+    ocp.subjectTo(-5 <= x(27) <= 5);
 
-
-// ----------------------------------------   CONTRAINTES CONTINUES   ----------------------------------- //
-// CONTRAINTES COMMANDES MOTEURS
-    ocp.subjectTo(0 <= x(24) <= 200);
-    ocp.subjectTo(0 <= x(25) <= 200);
-    ocp.subjectTo(0 <= x(26) <= 200);
-    ocp.subjectTo(0 <= x(27) <= 200);
-
-// CONTRAINTES COMMANDES DES JOINTS
-    ocp.subjectTo(-150 <= x(28) <= 150);
-    ocp.subjectTo(-150 <= x(29) <= 150);
-    ocp.subjectTo(-28 <= x(31) <= 28);
-    ocp.subjectTo(-28 <= x(32) <= 28);
-    ocp.subjectTo(-28 <= x(33) <= 28);
-//    ocp.subjectTo(x(28) == 0.);
-//    ocp.subjectTo(x(29) == 0.);
-//    ocp.subjectTo(x(30) == 0.);
-//    ocp.subjectTo(x(31) == 0.);
-//    ocp.subjectTo(x(32) == 0.);
-//    ocp.subjectTo(x(33) == 0.);
-
-// CONTRAINTES LIMITES DES JOINTS
-    for (unsigned int k=0 ; k < 6 ; k++) {
-        ocp.subjectTo(-1.57 <= x(k+6) <= 1.57);
-    }
-
-// CONTRAINTES OPTIONELLES RPY
-//    ocp.subjectTo( -3.14 <= x(3) <= 0);
-//    ocp.subjectTo( -1.57 <= x(4) <= 1.57);
-
-
-// ----------------------------------------------------------------------------------------------------- //
-
+    ocp.subjectTo(x(5) == 0.);
+    ocp.subjectTo( -1.57 <= x(3) <= 1.57);
+    ocp.subjectTo( -1.57 <= x(4) <= 1.57);
 
     // VISUALIZE THE RESULTS IN A GNUPLOT WINDOW:
     // ------------------------------------------
@@ -328,11 +290,9 @@ int main( ){
     window1.addSubplot( x(25),"u2" );
     window1.addSubplot( x(26),"u3" );
     window1.addSubplot( x(27),"u4" );
-    window1.addSubplot( x(28),"uArm1" );
-    window1.addSubplot( x(29),"uArm2" );
+//    window1.addSubplot( x(28),"uArm1" );
 //    window1.addSubplot( x(29),"uArm2" );
-//        window1.addSubplot( x(7),"xArm2" );
-    window1.addSubplot( x(30),"uArm3" );
+//    window1.addSubplot( x(30),"uArm3" );
 //    window1.addSubplot( x(31),"uArm4" );
 //    window1.addSubplot( x(32),"uArm5" );
 //    window1.addSubplot( x(33),"uArm6" );
@@ -343,62 +303,41 @@ int main( ){
 //    window1.addSubplot( x(11),"w3v" );
 //    window1.addSubplot( x(5),"w3x" );
 
-
-   // U INITIAL
-    Grid timeGrid(0.0,2.0,NB_IT+1);
-    VariablesGrid u_init(10, timeGrid);
-    for (int i = 0 ; i<NB_IT+1 ; i++ ) {
-      u_init(i,0) = 98;
-      u_init(i,1) = 98;
-      u_init(i,2) = 98;
-      u_init(i,3) = 98;
-      u_init(i,4) = 0;
-      u_init(i,5) = 0;
-      u_init(i,6) = 0;
-      u_init(i,7) = 0;
-      u_init(i,8) = 0;
-      u_init(i,9) = 0;
-    }
-    VariablesGrid x_init(25, timeGrid);
-    for (int i = 0 ; i<NB_IT+1 ; i++ ) {
-        for (unsigned int k=0 ; k < 25 ; k++) {
-            if (k==0) {
-                x_init(i,k) = i * 1./NB_IT;
-            }
-            else
-                x_init(i,k) = 0.;
-        }
-    }
     // DEFINE AN OPTIMIZATION ALGORITHM AND SOLVE THE OCP:
     // ---------------------------------------------------
     OptimizationAlgorithm algorithm(ocp);
+    //algorithm.set( INTEGRATOR_TOLERANCE, 1e+2 );
+    //algorithm.set( DISCRETIZATION_TYPE, SINGLE_SHOOTING   );
+    //algorithm.set( HESSIAN_APPROXIMATION, FULL_BFGS_UPDATE );
+    algorithm.set( INTEGRATOR_TYPE, INT_RK78 );
+    algorithm.set( MAX_NUM_ITERATIONS, 500 );
+    algorithm.set( KKT_TOLERANCE, 1e-12);
+    //algorithm.set( ABSOLUTE_TOLERANCE, 10. );
+    //algorithm.set( INTEGRATOR_TOLERANCE,<double> );
+    algorithm << window1;
 
-    algorithm.initializeControls(u_init);
-    algorithm.initializeDifferentialStates(x_init);
+//    double testx[34];
+//    for (i=0 ; i<34 ; i++) {
+//        testx[i] = 0.;
+//    }
+//    testx[4] = 0;
+//    testx[3] = 1.57;
+//    testx[13] = 0.;
+//    testx[14] = 0.;
+//    testx[15] = 0.;
+//    testx[16] = 1.;
 
-   algorithm.set( INTEGRATOR_TOLERANCE, 1e-3 );
-   algorithm.set( DISCRETIZATION_TYPE, SINGLE_SHOOTING   );
-//    algorithm.set( HESSIAN_APPROXIMATION, CONSTANT_HESSIAN );
-    algorithm.set( INTEGRATOR_TYPE, INT_RK45 );
-//    algorithm.set( MAX_NUM_INTEGRATOR_STEPS, 100000);
-    algorithm.set( MAX_NUM_ITERATIONS, 50 );
-    algorithm.set( KKT_TOLERANCE, 1e-6);
-//    algorithm.set( SPARSE_QP_SOLUTION, CONDENSING);
+//    double testf[24];
+//    for (i=0 ; i<24 ; i++) {
+//        testf[i] = 0;
+//    }
+//    myDifferentialEquation( testx, testf, testf );
 
-    LogRecord logdiff(LOG_AT_END , PS_DEFAULT);
-    logdiff << LOG_DIFFERENTIAL_STATES;
-    algorithm << logdiff;
-//    algorithm << window1;
+//    for ( unsigned int k=0 ; k<24 ; k++ ) {
+//        std::cout << testf[k] << std::endl;
+//    }
 
     algorithm.solve();
-
-    algorithm.getLogRecord(logdiff);
-    std::ofstream file;
-    file.open("/tmp/log.txt",std::ios::out);
-    logdiff.print(file);
-
-    algorithm.getDifferentialStates("/tmp/states1.txt");
-    algorithm.getControls("/tmp/controls1.txt");
 
     return 0;
 }

@@ -30,8 +30,11 @@
   *    \date   2009
   */
 
-#include <acado_optimal_control.hpp>
-#include <acado_gnuplot.hpp>
+//#include <acado_optimal_control.hpp>
+//#include <acado_gnuplot.hpp>
+#include <acado_toolkit.hpp>
+#include <include/acado_gnuplot/gnuplot_window.hpp>
+
 #include <time.h>
 #include <math.h>
 

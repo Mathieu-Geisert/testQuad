@@ -26,6 +26,7 @@ SETUP_PROJECT()
 # ----------------------------------------------------
 ADD_REQUIRED_DEPENDENCY("pinocchio")
 ADD_REQUIRED_DEPENDENCY("acado")
+
 SEARCH_FOR_BOOST()
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
