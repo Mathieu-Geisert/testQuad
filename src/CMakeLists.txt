@@ -18,6 +18,7 @@ SET( SOURCES
   QuadFreeflyerPinocchio
   QuadPickUp
   MPCQuad
+  Quad_MPC_code_geeration
 #  FreeflyerPinocchio_simpleControl
 #  quadWithArmPinocchio_simpleControl
   )
