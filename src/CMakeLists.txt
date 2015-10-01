@@ -19,6 +19,9 @@ SET( SOURCES
   QuadPickUp
   MPCQuad
   Quad_MPC_code_geeration
+  pendulum_VarMass
+  pendulum_FixMass
+  arm_manipulation
 #  FreeflyerPinocchio_simpleControl
 #  quadWithArmPinocchio_simpleControl
   )
